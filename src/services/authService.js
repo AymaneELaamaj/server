@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
-
+import generateToken from "../utils/generateToken.js";
 const SALT_ROUNDS = 10;
 
 export const registerUser = async ({ name, email, password }) => {
@@ -45,11 +45,14 @@ export const loginUser = async ({ email, password }) => {
     error.statusCode = 401;
     throw error;
   }
-
+  const token = generateToken(user);
   return {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+    token,
   };
 };
