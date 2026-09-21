@@ -1,0 +1,81 @@
+import Category from "../models/Category.js";
+
+const createError = (message, statusCode) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+const findCategoryOrFail = async (id) => {
+  const category = await Category.findById(id);
+
+  if (!category) {
+    throw createError("Category not found", 404);
+  }
+
+  return category;
+};
+
+const ensureCategoryNameIsAvailable = async (name, excludedId = null) => {
+  if (!name) {
+    return;
+  }
+
+  const query = { name };
+
+  if (excludedId) {
+    query._id = { $ne: excludedId };
+  }
+
+  const existingCategory = await Category.findOne(query);
+
+  if (existingCategory) {
+    throw createError("Category name already exists", 409);
+  }
+};
+
+export const createCategory = async (data) => {
+  await ensureCategoryNameIsAvailable(data.name);
+
+  try {
+    return await Category.create(data);
+  } catch (error) {
+    if (error.code === 11000) {
+      throw createError("Category name already exists", 409);
+    }
+
+    throw error;
+  }
+};
+
+export const getCategories = async () => {
+  return Category.find().sort({ createdAt: -1 });
+};
+
+export const getCategoryById = async (id) => {
+  return findCategoryOrFail(id);
+};
+
+export const updateCategory = async (id, data) => {
+  await findCategoryOrFail(id);
+  await ensureCategoryNameIsAvailable(data.name, id);
+
+  try {
+    return await Category.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      throw createError("Category name already exists", 409);
+    }
+
+    throw error;
+  }
+};
+
+export const deleteCategory = async (id) => {
+  const category = await findCategoryOrFail(id);
+
+  await category.deleteOne();
+};
