@@ -17,9 +17,15 @@ export const validateRequest = (schema) => (req, res, next) => {
     });
   }
 
-  req.body = result.data.body ?? req.body;
-  req.params = result.data.params ?? req.params;
-  req.query = result.data.query ?? req.query;
+  req.validated = result.data;
+
+  if (result.data.body) {
+    req.body = result.data.body;
+  }
+
+  if (result.data.params) {
+    req.params = result.data.params;
+  }
 
   return next();
 };
