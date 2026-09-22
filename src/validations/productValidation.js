@@ -25,10 +25,21 @@ const stockSchema = z.coerce
   .int("Stock must be an integer")
   .min(0, "Stock must be greater than or equal to 0");
 
-const imageUrlSchema = z
+const externalImageUrlSchema = z
   .string()
   .trim()
-  .url("Image URL must be valid")
+  .url("Image URL must be valid");
+
+const importedImageSchema = z
+  .string()
+  .regex(
+    /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/,
+    "Image must be a valid JPG, PNG or WebP file"
+  )
+  .max(1400000, "Image must be less than 1 MB");
+
+const imageUrlSchema = z
+  .union([externalImageUrlSchema, importedImageSchema])
   .optional();
 
 export const createProductSchema = z.object({
