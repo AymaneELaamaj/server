@@ -1,11 +1,6 @@
+import { BadRequestError, NotFoundError } from "../errors/index.js";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
-
-const createError = (message, statusCode) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  return error;
-};
 
 const findUserOrderOrFail = async (orderId, userId) => {
   const order = await Order.findOne({ _id: orderId, user: userId })
@@ -13,7 +8,7 @@ const findUserOrderOrFail = async (orderId, userId) => {
     .populate("items.product", "name imageUrl");
 
   if (!order) {
-    throw createError("Order not found", 404);
+    throw new NotFoundError("Order not found");
   }
 
   return order;
@@ -41,7 +36,7 @@ export const createOrder = async ({ userId, items }) => {
   const products = await Product.find({ _id: { $in: productIds } });
 
   if (products.length !== productIds.length) {
-    throw createError("One or more products were not found", 404);
+    throw new NotFoundError("One or more products were not found");
   }
 
   const productsById = new Map(products.map((product) => [product._id.toString(), product]));
@@ -50,7 +45,7 @@ export const createOrder = async ({ userId, items }) => {
     const product = productsById.get(item.product);
 
     if (product.stock < item.quantity) {
-      throw createError(`${product.name} does not have enough stock`, 400);
+      throw new BadRequestError(`${product.name} does not have enough stock`);
     }
 
     return {
@@ -100,7 +95,7 @@ export const getValidatedOrderById = async (orderId) => {
     .populate("items.product", "name imageUrl");
 
   if (!order) {
-    throw createError("Order not found", 404);
+    throw new NotFoundError("Order not found");
   }
 
   return order;
@@ -110,7 +105,7 @@ export const cancelUserOrder = async (orderId, userId) => {
   const order = await findUserOrderOrFail(orderId, userId);
 
   if (order.status === "CANCELLED") {
-    throw createError("Order is already cancelled", 400);
+    throw new BadRequestError("Order is already cancelled");
   }
 
   await Product.bulkWrite(

@@ -1,11 +1,11 @@
+import { ForbiddenError } from "../errors/index.js";
+
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: "Access forbidden",
-      });
+      return next(new ForbiddenError("Access forbidden"));
     }
 
-    next();
+    return next();
   };
 };

@@ -6,109 +6,68 @@ import {
   getUserOrderById,
   getUserOrders,
 } from "../services/orderService.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { createInvoicePdf } from "../utils/invoicePdf.js";
 
-export const create = async (req, res) => {
-  try {
-    const order = await createOrder({
-      userId: req.user._id,
-      items: req.body.items,
-    });
+export const create = asyncHandler(async (req, res) => {
+  const order = await createOrder({
+    userId: req.user._id,
+    items: req.body.items,
+  });
 
-    return res.status(201).json({
-      message: "Order created successfully",
-      order,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(201).json({
+    message: "Order created successfully",
+    order,
+  });
+});
 
-export const findMine = async (req, res) => {
-  try {
-    const orders = await getUserOrders(req.user._id);
+export const findMine = asyncHandler(async (req, res) => {
+  const orders = await getUserOrders(req.user._id);
 
-    return res.status(200).json({
-      orders,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    orders,
+  });
+});
 
-export const findOneMine = async (req, res) => {
-  try {
-    const order = await getUserOrderById(req.params.id, req.user._id);
+export const findOneMine = asyncHandler(async (req, res) => {
+  const order = await getUserOrderById(req.params.id, req.user._id);
 
-    return res.status(200).json({
-      order,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    order,
+  });
+});
 
-export const findValidated = async (req, res) => {
-  try {
-    const orders = await getValidatedOrders();
+export const findValidated = asyncHandler(async (req, res) => {
+  const orders = await getValidatedOrders();
 
-    return res.status(200).json({
-      orders,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    orders,
+  });
+});
 
-export const findOneValidated = async (req, res) => {
-  try {
-    const order = await getValidatedOrderById(req.params.id);
+export const findOneValidated = asyncHandler(async (req, res) => {
+  const order = await getValidatedOrderById(req.params.id);
 
-    return res.status(200).json({
-      order,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    order,
+  });
+});
 
-export const cancelMine = async (req, res) => {
-  try {
-    const order = await cancelUserOrder(req.params.id, req.user._id);
+export const cancelMine = asyncHandler(async (req, res) => {
+  const order = await cancelUserOrder(req.params.id, req.user._id);
 
-    return res.status(200).json({
-      message: "Order cancelled successfully",
-      order,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    message: "Order cancelled successfully",
+    order,
+  });
+});
 
-export const downloadInvoice = async (req, res) => {
-  try {
-    const order = await getUserOrderById(req.params.id, req.user._id);
-    const pdf = createInvoicePdf(order);
+export const downloadInvoice = asyncHandler(async (req, res) => {
+  const order = await getUserOrderById(req.params.id, req.user._id);
+  const pdf = createInvoicePdf(order);
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="order-${order._id}.pdf"`);
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="order-${order._id}.pdf"`);
 
-    return res.status(200).send(pdf);
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).send(pdf);
+});

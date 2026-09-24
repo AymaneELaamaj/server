@@ -41,6 +41,14 @@ const productSchema = new mongoose.Schema(
   }
 );
 
+productSchema.index(
+  { name: 1, category: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 },
+  }
+);
+
 const Product = mongoose.model("Product", productSchema);
 
 export default Product;

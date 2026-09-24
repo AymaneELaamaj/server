@@ -1,16 +1,11 @@
+import { ConflictError, NotFoundError } from "../errors/index.js";
 import Category from "../models/Category.js";
-
-const createError = (message, statusCode) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  return error;
-};
 
 const findCategoryOrFail = async (id) => {
   const category = await Category.findById(id);
 
   if (!category) {
-    throw createError("Category not found", 404);
+    throw new NotFoundError("Category not found");
   }
 
   return category;
@@ -30,7 +25,7 @@ const ensureCategoryNameIsAvailable = async (name, excludedId = null) => {
   const existingCategory = await Category.findOne(query);
 
   if (existingCategory) {
-    throw createError("Category name already exists", 409);
+    throw new ConflictError("Category name already exists");
   }
 };
 
@@ -41,7 +36,7 @@ export const createCategory = async (data) => {
     return await Category.create(data);
   } catch (error) {
     if (error.code === 11000) {
-      throw createError("Category name already exists", 409);
+      throw new ConflictError("Category name already exists");
     }
 
     throw error;
@@ -67,7 +62,7 @@ export const updateCategory = async (id, data) => {
     });
   } catch (error) {
     if (error.code === 11000) {
-      throw createError("Category name already exists", 409);
+      throw new ConflictError("Category name already exists");
     }
 
     throw error;

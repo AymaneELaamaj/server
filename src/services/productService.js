@@ -1,11 +1,8 @@
+import { ConflictError, NotFoundError } from "../errors/index.js";
 import Category from "../models/Category.js";
 import Product from "../models/Product.js";
 
-const createError = (message, statusCode) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  return error;
-};
+const DUPLICATE_PRODUCT_MESSAGE = "Product name already exists in this category";
 
 const escapeRegex = (value) => {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -15,7 +12,7 @@ const findProductOrFail = async (id) => {
   const product = await Product.findById(id).populate("category", "name");
 
   if (!product) {
-    throw createError("Product not found", 404);
+    throw new NotFoundError("Product not found");
   }
 
   return product;
@@ -29,8 +26,49 @@ const ensureCategoryExists = async (categoryId) => {
   const category = await Category.findById(categoryId);
 
   if (!category) {
-    throw createError("Category not found", 404);
+    throw new NotFoundError("Category not found");
   }
+};
+
+const getCategoryId = (category) => {
+  const categoryId = category?._id || category;
+
+  return categoryId?.toString();
+};
+
+const ensureProductNameIsAvailable = async ({ name, category, excludedId = null }) => {
+  const query = {
+    name,
+    category,
+  };
+
+  if (excludedId) {
+    query._id = { $ne: excludedId };
+  }
+
+  const existingProduct = await Product.findOne(query).collation({
+    locale: "en",
+    strength: 2,
+  });
+
+  if (existingProduct) {
+    throw new ConflictError(DUPLICATE_PRODUCT_MESSAGE);
+  }
+};
+
+const normalizeName = (name) => {
+  return name.trim().toLowerCase();
+};
+
+const hasProductIdentityChanged = (product, data) => {
+  const currentCategoryId = getCategoryId(product.category);
+  const nextCategoryId = data.category?.toString() || currentCategoryId;
+  const nextName = data.name || product.name;
+
+  return (
+    normalizeName(nextName) !== normalizeName(product.name) ||
+    nextCategoryId !== currentCategoryId
+  );
 };
 
 const buildProductQuery = ({ search, category, minPrice, maxPrice }) => {
@@ -72,8 +110,20 @@ const buildSortOption = (sort) => {
 
 export const createProduct = async (data) => {
   await ensureCategoryExists(data.category);
+  await ensureProductNameIsAvailable({
+    name: data.name,
+    category: data.category,
+  });
 
-  return Product.create(data);
+  try {
+    return await Product.create(data);
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ConflictError(DUPLICATE_PRODUCT_MESSAGE);
+    }
+
+    throw error;
+  }
 };
 
 export const getProducts = async (filters) => {
@@ -108,13 +158,29 @@ export const getProductById = async (id) => {
 };
 
 export const updateProduct = async (id, data) => {
-  await findProductOrFail(id);
+  const product = await findProductOrFail(id);
   await ensureCategoryExists(data.category);
 
-  return Product.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  }).populate("category", "name");
+  if (hasProductIdentityChanged(product, data)) {
+    await ensureProductNameIsAvailable({
+      name: data.name || product.name,
+      category: data.category || getCategoryId(product.category),
+      excludedId: id,
+    });
+  }
+
+  try {
+    return await Product.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    }).populate("category", "name");
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ConflictError(DUPLICATE_PRODUCT_MESSAGE);
+    }
+
+    throw error;
+  }
 };
 
 export const deleteProduct = async (id) => {

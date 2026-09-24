@@ -5,71 +5,42 @@ import {
   getProducts,
   updateProduct,
 } from "../services/productService.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const create = async (req, res) => {
-  try {
-    const product = await createProduct(req.body);
+export const create = asyncHandler(async (req, res) => {
+  const product = await createProduct(req.body);
 
-    return res.status(201).json({
-      message: "Product created successfully",
-      product,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(201).json({
+    message: "Product created successfully",
+    product,
+  });
+});
 
-export const findAll = async (req, res) => {
-  try {
-    const result = await getProducts(req.validated?.query || req.query);
+export const findAll = asyncHandler(async (req, res) => {
+  const result = await getProducts(req.validated?.query || req.query);
 
-    return res.status(200).json(result);
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json(result);
+});
 
-export const findOne = async (req, res) => {
-  try {
-    const product = await getProductById(req.params.id);
+export const findOne = asyncHandler(async (req, res) => {
+  const product = await getProductById(req.params.id);
 
-    return res.status(200).json({
-      product,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    product,
+  });
+});
 
-export const update = async (req, res) => {
-  try {
-    const product = await updateProduct(req.params.id, req.body);
+export const update = asyncHandler(async (req, res) => {
+  const product = await updateProduct(req.params.id, req.body);
 
-    return res.status(200).json({
-      message: "Product updated successfully",
-      product,
-    });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(200).json({
+    message: "Product updated successfully",
+    product,
+  });
+});
 
-export const remove = async (req, res) => {
-  try {
-    await deleteProduct(req.params.id);
+export const remove = asyncHandler(async (req, res) => {
+  await deleteProduct(req.params.id);
 
-    return res.status(204).send();
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  return res.status(204).send();
+});

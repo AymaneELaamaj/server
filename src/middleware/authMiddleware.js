@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { UnauthorizedError } from "../errors/index.js";
 import User from "../models/User.js";
 
 export const authenticate = async (req, res, next) => {
@@ -6,9 +7,7 @@ export const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({
-        message: "Authentication required",
-      });
+      throw new UnauthorizedError("Authentication required");
     }
 
     const token = authHeader.split(" ")[1];
@@ -18,17 +17,17 @@ export const authenticate = async (req, res, next) => {
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
-      return res.status(401).json({
-        message: "User no longer exists",
-      });
+      throw new UnauthorizedError("User no longer exists");
     }
 
     req.user = user;
 
-    next();
+    return next();
   } catch (error) {
-    return res.status(401).json({
-      message: "Invalid or expired token",
-    });
+    if (error instanceof UnauthorizedError) {
+      return next(error);
+    }
+
+    return next(new UnauthorizedError("Invalid or expired token"));
   }
 };

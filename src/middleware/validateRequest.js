@@ -1,3 +1,5 @@
+import { BadRequestError } from "../errors/index.js";
+
 export const validateRequest = (schema) => (req, res, next) => {
   const result = schema.safeParse({
     body: req.body,
@@ -11,12 +13,8 @@ export const validateRequest = (schema) => (req, res, next) => {
       message: issue.message,
     }));
 
-    return res.status(400).json({
-      message: "Validation failed",
-      errors,
-    });
+    return next(new BadRequestError("Validation failed", errors));
   }
-
 
   req.validated = result.data;
 
